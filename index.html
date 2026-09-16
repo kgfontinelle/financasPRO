@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças Pro - Multi-Cartões</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script>
+    tailwind.config = { darkMode: 'class' }
+</script><style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+    #expenseList::-webkit-scrollbar { width: 6px; }
+    #expenseList::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+</style></head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 dark:text-white">💰 Finanças Pro</h1>
+                <p class="text-slate-500 dark:text-slate-400 text-sm">Gestão por Cartões e Categorias</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col">
+                    <label class="text-[10px] font-bold uppercase text-slate-400 mb-1 ml-1">Mês de Referência</label>
+                    <input type="month" id="monthSelector" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm outline-none">
+                </div>
+                <button onclick="toggleDarkMode()" class="mt-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl shadow-sm transition">
+                    <i id="themeIcon" class="fas fa-moon text-slate-600 dark:text-yellow-400"></i>
+                </button>
+                <button onclick="exportToCSV()" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2">
+                    <i class="fas fa-file-export"></i> <span class="hidden sm:inline">CSV</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- COLUNA 1: ENTRADAS -->
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Salário do Mês (R$)</label>
+                    <input type="number" id="salaryInput" placeholder="0,00" class="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all pb-2">
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h2 class="text-lg font-bold mb-4">Nova Despesa</h2>
+                    <div class="space-y-4">
+                        <input type="text" id="descInput" placeholder="Descrição (ex: Aluguel)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="valueInput" placeholder="Valor (R$)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="typeInput" onchange="toggleCardName()" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="geral">Despesa Geral</option>
+                            <option value="cartao">Cartão de Crédito</option>
+                        </select>
+                        <!-- Campo para o nome do cartão (aparece apenas se for tipo 'cartao') -->
+                        <div id="cardNameContainer" class="hidden">
+                            <input type="text" id="cardNameInput" placeholder="Nome do Cartão (ex: Amex)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                        <button onclick="addExpense()" class="w-full bg-slate-800 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg">Adicionar Despesa</button>
+                    </div>
+                </div>
+                <button onclick="clearMonth()" class="w-full text-rose-500 text-sm font-semibold hover:bg-rose-50 dark:hover:bg-rose-900/20 py-2 rounded-lg transition"><i class="fas fa-trash-alt mr-1"></i> Limpar este mês</button>
+            </div>
+
+            <!-- COLUNA 2: DASHBOARD -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500"><p class="text-xs font-bold text-slate-400 uppercase">Receita</p><p id="displaySalary" class="text-xl font-bold text-emerald-600">R$ 0,00</p></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-rose-500"><p class="text-xs font-bold text-slate-400 uppercase">Despesas</p><p id="displayExpenses" class="text-xl font-bold text-rose-600">R$ 0,00</p></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-blue-500"><p class="text-xs font-bold text-slate-400 uppercase">Sobra</p><p id="displayBalance" class="text-xl font-bold text-blue-600">R$ 0,00</p></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700"><h3 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-widest">Gastos por Tipo</h3><div class="relative h-64"><canvas id="expenseChart"></canvas></div></div>
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
+                        <div class="p-4 border-b dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center"><h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Histórico do Mês</h3><span id="expenseCount" class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded text-[10px] font-bold">0 itens</span></div>
+                        <ul id="expenseList" class="divide-y divide-slate-100 dark:divide-slate-700 overflow-y-auto max-h-64"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- PARTE 2: JAVASCRIPT (COLE ABAIXO DA PARTE 1) -->
+<script>
+// CONTINUAÇÃO DO SCRIPT
+        let state = { theme: 'light', monthsData: {} };
+        let myChart = null;
+        let currentMonthKey = "";
+
+        const monthSelector = document.getElementById('monthSelector');
+        const salaryInput = document.getElementById('salaryInput');
+        const descInput = document.getElementById('descInput');
+        const valueInput = document.getElementById('valueInput');
+        const typeInput = document.getElementById('typeInput');
+        const cardNameInput = document.getElementById('cardNameInput');
+        const cardNameContainer = document.getElementById('cardNameContainer');
+        const expenseList = document.getElementById('expenseList');
+
+        window.onload = () => {
+            loadFromLocalStorage();
+            initMonthSelector();
+            applyTheme();
+            updateUI();
+        };
+
+        function initMonthSelector() {
+            const now = new Date();
+            currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            monthSelector.value = currentMonthKey;
+            if (!state.monthsData[currentMonthKey]) state.monthsData[currentMonthKey] = { salary: 0, expenses: [] };
+
+            monthSelector.addEventListener('change', (e) => {
+                currentMonthKey = e.target.value;
+                if (!state.monthsData[currentMonthKey]) state.monthsData[currentMonthKey] = { salary: 0, expenses: [] };
+                updateUI();
+            });
+        }
+
+        function toggleCardName() {
+            cardNameContainer.classList.toggle('hidden', typeInput.value !== 'cartao');
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('financas_pro_v3');
+            if (saved) state = JSON.parse(saved);
+        }
+
+        function save() { localStorage.setItem('financas_pro_v3', JSON.stringify(state)); }
+
+        function toggleDarkMode() {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            applyTheme();
+            save();
+        }
+
+        function applyTheme() {
+            document.documentElement.classList.toggle('dark', state.theme === 'dark');
+            document.getElementById('themeIcon').className = state.theme === 'dark' ? "fas fa-sun text-yellow-400" : "fas fa-moon text-slate-600";
+        }
+
+        salaryInput.addEventListener('input', (e) => {
+            state.monthsData[currentMonthKey].salary = parseFloat(e.target.value) || 0;
+            updateUI();
+        });
+
+        // Atualiza o input de salário quando muda o mês
+        monthSelector.addEventListener('change', () => {
+            salaryInput.value = state.monthsData[currentMonthKey].salary || '';
+        });
+
+        function addExpense() {
+            const desc = descInput.value.trim();
+            const val = parseFloat(valueInput.value);
+            const type = typeInput.value;
+            const cardName = type === 'cartao' ? cardNameInput.value.trim() : '';
+
+            if (!desc || isNaN(val) || val <= 0) return alert("Preencha os dados corretamente!");
+            if (type === 'cartao' && !cardName) return alert("Informe o nome do cartão!");
+
+            state.monthsData[currentMonthKey].expenses.push({
+                id: Date.now(), description: desc, value: val, type: type, cardName: cardName || 'Cartão'
+            });
+
+            descInput.value = ''; valueInput.value = ''; cardNameInput.value = '';
+            updateUI();
+        }
+
+        function removeExpense(id) {
+            state.monthsData[currentMonthKey].expenses = state.monthsData[currentMonthKey].expenses.filter(e => e.id !== id);
+            updateUI();
+        }
+
+        function clearMonth() {
+            if (confirm("Limpar este mês?")) {
+                state.monthsData[currentMonthKey] = { salary: 0, expenses: [] };
+                salaryInput.value = '';
+                updateUI();
+            }
+        }
+
+        function updateUI() {
+            const data = state.monthsData[currentMonthKey];
+            // Sincroniza o input de salário com o valor real do estado ao mudar mês/valor
+            salaryInput.value = data.salary || ''; 
+            
+            const totalExp = data.expenses.reduce((acc, curr) => acc + curr.value, 0);
+            const balance = (data.salary || 0) - totalExp;
+
+            document.getElementById('displaySalary').innerText = formatCurrency(data.salary || 0);
+            document.getElementById('displayExpenses').innerText = formatCurrency(totalExp);
+            document.getElementById('displayBalance').innerText = formatCurrency(balance);
+            document.getElementById('displayBalance').className = balance < 0 ? "text-xl font-bold text-rose-600" : "text-xl font-bold text-blue-600";
+
+            renderList(data.expenses);
+            renderChart(data.expenses);
+            save();
+        }
+
+        function renderList(expenses) {
+            document.getElementById('expenseCount').innerText = `${expenses.length} itens`;
+            if (expenses.length === 0) {
+                expenseList.innerHTML = `<li class="p-8 text-center text-slate-400 italic text-sm">Sem despesas este mês.</li>`;
+                return;
+            }
+            expenseList.innerHTML = expenses.map(exp => `
+                <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="${exp.type === 'cartao' ? 'text-purple-500' : 'text-orange-500'}"><i class="fas ${exp.type === 'cartao' ? 'fa-credit-card' : 'fa-shopping-basket'}"></i></div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${exp.description}</p>
+                            <p class="text-[10px] uppercase text-slate-400 font-bold">${exp.type === 'cartao' ? exp.cardName : 'Geral'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-bold text-rose-500">-${formatCurrency(exp.value)}</span>
+                        <button onclick="removeExpense(${exp.id})" class="text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt text-xs"></i></button>
+                    </div>
+                </li>`).join('');
+        }
+
+        function renderChart(expenses) {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const totals = expenses.reduce((acc, curr) => {
+                const key = curr.type === 'cartao' ? `Cartão: ${curr.cardName}` : 'Geral';
+                acc[key] = (acc[key] || 0) + curr.value;
+                return acc;
+            }, {});
+
+            const labels = Object.keys(totals);
+            const dataValues = Object.values(totals);
+            const colors = labels.map((_, i) => i === 0 ? '#f97316' : (i === 1 ? '#a855f7' : '#3b82f6'));
+
+            if (myChart) myChart.destroy();
+            if (labels.length === 0) return;
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data: dataValues, backgroundColor: colors, borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } } }
+            });
+        }
+
+        function exportToCSV() {
+            let csv = "Mês,Descrição,Valor,Tipo,Cartão\n";
+            Object.keys(state.monthsData).forEach(mKey => {
+                state.monthsData[mKey].expenses.forEach(e => {
+                    csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'}\n`;
+                });
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `financas_completo.csv`;
+            link.click();
+        }
+
+        function formatCurrency(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    </script>
+</body>
+</html>
