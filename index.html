@@ -126,7 +126,7 @@
         <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 3.0 Nuvem Multi-Usuários (Mobile Fix)</p>
+                <p>Versão 3.1 Nuvem Multi-Usuários</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -195,12 +195,12 @@
         }
     });
 
-    // Função de Login com Google (Alterada para signInWithRedirect)
+    // Função de Login com Google (Corrigida para usar Pop-up seguro em HTTPS)
     function loginComGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithRedirect(provider).catch((error) => {
-            console.error("Erro no redirecionamento:", error);
-            alert("Erro ao tentar fazer login.");
+        auth.signInWithPopup(provider).catch((error) => {
+            console.error("Erro no login:", error);
+            alert("Ocorreu um erro ao fazer login: " + error.message);
         });
     }
 
