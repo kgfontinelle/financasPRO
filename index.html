@@ -199,13 +199,12 @@
         }
     });
 
-    // Função de Login com Google
-    function loginComGoogle() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch((error) => {
-            console.error("Erro no login:", error);
-            alert("Erro ao tentar fazer login. Verifique se ativou o método Google no Firebase.");
-        });
+    // Função de Login com Google (Otimizada para Celulares)
+function loginComGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // Redireciona a página inteira em vez de tentar abrir um pop-up bloqueável
+    auth.signInWithRedirect(provider);
+});
     }
 
     // Função de Sair da Conta
