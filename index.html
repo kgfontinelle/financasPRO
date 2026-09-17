@@ -11,7 +11,7 @@
     <!-- Font Awesome (Ícones) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- FIREBASE (Compat) - Adicionado módulo de Autenticação -->
+    <!-- FIREBASE (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -126,14 +126,14 @@
         <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 3.0 Nuvem Multi-Usuários</p>
+                <p>Versão 3.0 Nuvem Multi-Usuários (Mobile Fix)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
     </div>
 
 <script>
-    // 1. CONFIGURAÇÃO DO FIREBASE (Suas Chaves Mantidas)
+    // 1. CONFIGURAÇÃO DO FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyDSVUcl_2AubS8oHEH5P_NTSCawQEkFeIE",
         authDomain: "financaspro-79f1d.firebaseapp.com",
@@ -165,18 +165,15 @@
     const cardNameContainer = document.getElementById('cardNameContainer');
     const expenseList = document.getElementById('expenseList');
 
-    // MONITOR DE LOGIN: Verifica se tem alguém logado
+    // MONITOR DE LOGIN
     auth.onAuthStateChanged(async (user) => {
         if (user) {
-            // Se estiver logado, mostra o App e esconde o Login
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
             
-            // Pega o primeiro nome do usuário
             const firstName = user.displayName ? user.displayName.split(' ')[0] : 'Usuário';
             document.getElementById('userNameDisplay').innerText = `Olá, ${firstName}`;
 
-            // Configura o banco de dados para salvar na gaveta EXCLUSIVA desse usuário (user.uid)
             docRef = db.collection("financas").doc(user.uid);
             
             document.getElementById('salaryInput').disabled = true;
@@ -192,25 +189,24 @@
             applyTheme();
             updateUI();
         } else {
-            // Se NÃO estiver logado, mostra a tela de login
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('mainApp').style.display = 'none';
             isDataLoaded = false;
         }
     });
 
-    // Função de Login com Google (Otimizada para Celulares)
-function loginComGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    // Redireciona a página inteira em vez de tentar abrir um pop-up bloqueável
-    auth.signInWithRedirect(provider);
-});
+    // Função de Login com Google (Alterada para signInWithRedirect)
+    function loginComGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithRedirect(provider).catch((error) => {
+            console.error("Erro no redirecionamento:", error);
+            alert("Erro ao tentar fazer login.");
+        });
     }
 
     // Função de Sair da Conta
     function logout() {
         auth.signOut();
-        // Reseta o estado local ao sair
         state = { theme: 'light', monthsData: {} };
         if (myChart) myChart.destroy();
     }
@@ -222,7 +218,6 @@ function loginComGoogle() {
                 state = docSnap.data();
                 if(!state.monthsData) state.monthsData = {};
             } else {
-                // Se é o primeiro acesso da pessoa, cria o estado vazio
                 state = { theme: 'light', monthsData: {} };
             }
         } catch (e) {
