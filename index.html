@@ -56,7 +56,8 @@
             <div class="space-y-6">
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Salário do Mês (R$)</label>
-                    <input type="number" id="salaryInput" placeholder="0,00" class="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all pb-2">
+                    <!-- Trocado type="number" por type="text" para permitir vírgula -->
+                    <input type="text" inputmode="decimal" id="salaryInput" placeholder="0,00" class="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all pb-2">
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
@@ -64,6 +65,9 @@
                     <div class="space-y-4">
                         <input type="text" id="descInput" placeholder="Descrição (ex: Aluguel)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                         <input type="number" id="valueInput" placeholder="Valor (R$)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- Novo campo de observação adicionado aqui -->
+                        <input type="text" id="obsInput" placeholder="Observação (opcional)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        
                         <select id="typeInput" onchange="toggleCardName()" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="geral">Despesa Geral</option>
                             <option value="cartao">Cartão de Crédito</option>
@@ -113,6 +117,7 @@
     const salaryInput = document.getElementById('salaryInput');
     const descInput = document.getElementById('descInput');
     const valueInput = document.getElementById('valueInput');
+    const obsInput = document.getElementById('obsInput'); // Pegando o novo input
     const typeInput = document.getElementById('typeInput');
     const cardNameInput = document.getElementById('cardNameInput');
     const cardNameContainer = document.getElementById('cardNameContainer');
@@ -163,18 +168,22 @@
         }
     }
 
+    // Adaptado para converter a vírgula do salário em ponto para o sistema ler
     salaryInput.addEventListener('input', (e) => {
-        state.monthsData[currentMonthKey].salary = parseFloat(e.target.value) || 0;
-        updateUI();
+        let valStr = e.target.value.replace(/\./g, '').replace(',', '.');
+        state.monthsData[currentMonthKey].salary = parseFloat(valStr) || 0;
+        updateUI(false); // false para não atrapalhar o que o usuário está digitando ativamente
     });
 
     monthSelector.addEventListener('change', () => {
-        salaryInput.value = state.monthsData[currentMonthKey].salary || '';
+        let sal = state.monthsData[currentMonthKey].salary || '';
+        salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
     });
 
     function addExpense() {
         const desc = descInput.value.trim();
         const val = parseFloat(valueInput.value);
+        const obs = obsInput.value.trim(); // Pegando valor de observação
         const type = typeInput.value;
         const cardName = type === 'cartao' ? cardNameInput.value.trim() : '';
 
@@ -182,10 +191,10 @@
         if (type === 'cartao' && !cardName) return alert("Informe o nome do cartão!");
 
         state.monthsData[currentMonthKey].expenses.push({
-            id: Date.now(), description: desc, value: val, type: type, cardName: cardName || 'Cartão'
+            id: Date.now(), description: desc, value: val, observation: obs, type: type, cardName: cardName || 'Cartão'
         });
 
-        descInput.value = ''; valueInput.value = ''; cardNameInput.value = '';
+        descInput.value = ''; valueInput.value = ''; obsInput.value = ''; cardNameInput.value = '';
         updateUI();
     }
 
@@ -202,9 +211,14 @@
         }
     }
 
-    function updateUI() {
+    function updateUI(updateSalaryField = true) {
         const data = state.monthsData[currentMonthKey];
-        salaryInput.value = data.salary || '';
+        
+        if (updateSalaryField) {
+            let sal = data.salary || '';
+            salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
+        }
+        
         const totalExp = data.expenses.reduce((acc, curr) => acc + curr.value, 0);
         const balance = (data.salary || 0) - totalExp;
 
@@ -224,11 +238,18 @@
             expenseList.innerHTML = `<li class="p-8 text-center text-slate-400 italic text-sm">Sem despesas este mês.</li>`;
             return;
         }
+        // Observação incorporada ao lado da categoria em texto menor
         expenseList.innerHTML = expenses.map(exp => `
             <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group">
                 <div class="flex items-center gap-3">
                     <div class="${exp.type === 'cartao' ? 'text-purple-500' : 'text-orange-500'}"><i class="fas ${exp.type === 'cartao' ? 'fa-credit-card' : 'fa-shopping-basket'}"></i></div>
-                    <div><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${exp.description}</p><p class="text-[10px] uppercase text-slate-400 font-bold">${exp.type === 'cartao' ? exp.cardName : 'Geral'}</p></div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${exp.description}</p>
+                        <p class="text-[10px] uppercase text-slate-400 font-bold">
+                            ${exp.type === 'cartao' ? exp.cardName : 'Geral'}
+                            ${exp.observation ? ` • ${exp.observation}` : ''}
+                        </p>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="text-sm font-bold text-rose-500">-${formatCurrency(exp.value)}</span>
@@ -260,10 +281,10 @@
     }
 
     function exportToCSV() {
-        let csv = "Mês,Descrição,Valor,Tipo,Cartão\n";
+        let csv = "Mês,Descrição,Valor,Tipo,Cartão,Observação\n"; // Atualizado cabeçalho
         Object.keys(state.monthsData).forEach(mKey => {
             state.monthsData[mKey].expenses.forEach(e => {
-                csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'}\n`;
+                csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'},${e.observation || '-'}\n`;
             });
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
