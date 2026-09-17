@@ -64,7 +64,13 @@
                     <h2 class="text-lg font-bold mb-4">Nova Despesa</h2>
                     <div class="space-y-4">
                         <input type="text" id="descInput" placeholder="Descrição (ex: Aluguel)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="number" id="valueInput" placeholder="Valor (R$)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        
+                        <!-- Campo de Valor e Parcelas juntos -->
+                        <div class="flex gap-4">
+                            <input type="number" id="valueInput" placeholder="Valor Total (R$)" class="w-2/3 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="number" id="installmentsInput" placeholder="Parcelas" min="1" value="1" title="Número de parcelas" class="w-1/3 p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
                         <input type="text" id="obsInput" placeholder="Observação (opcional)" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                         
                         <select id="typeInput" onchange="toggleCardName()" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
@@ -100,7 +106,7 @@
         <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 2.0 Nuvem</p>
+                <p>Versão 2.1 Nuvem (Com Parcelamentos)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -133,6 +139,7 @@
     const salaryInput = document.getElementById('salaryInput');
     const descInput = document.getElementById('descInput');
     const valueInput = document.getElementById('valueInput');
+    const installmentsInput = document.getElementById('installmentsInput');
     const obsInput = document.getElementById('obsInput');
     const typeInput = document.getElementById('typeInput');
     const cardNameInput = document.getElementById('cardNameInput');
@@ -168,7 +175,7 @@
         }
     }
 
-    // Salva na nuvem (usando um pequeno atraso para não travar enquanto digita o salário)
+    // Salva na nuvem (usando um pequeno atraso)
     let saveTimeout;
     function save() {
         if(!db || !isDataLoaded) return;
@@ -227,21 +234,61 @@
         salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
     });
 
+    // Função auxiliar para avançar os meses nas compras parceladas
+    function addMonthsToKey(key, monthsToAdd) {
+        let [year, month] = key.split('-').map(Number);
+        month += monthsToAdd;
+        while (month > 12) {
+            month -= 12;
+            year += 1;
+        }
+        return `${year}-${String(month).padStart(2, '0')}`;
+    }
+
     function addExpense() {
         const desc = descInput.value.trim();
-        const val = parseFloat(valueInput.value);
+        const totalVal = parseFloat(valueInput.value);
+        const installments = parseInt(installmentsInput.value) || 1;
         const obs = obsInput.value.trim(); 
         const type = typeInput.value;
         const cardName = type === 'cartao' ? cardNameInput.value.trim() : '';
 
-        if (!desc || isNaN(val) || val <= 0) return alert("Preencha corretamente!");
+        if (!desc || isNaN(totalVal) || totalVal <= 0) return alert("Preencha corretamente!");
+        if (installments < 1) return alert("O número de parcelas deve ser pelo menos 1!");
         if (type === 'cartao' && !cardName) return alert("Informe o nome do cartão!");
 
-        state.monthsData[currentMonthKey].expenses.push({
-            id: Date.now(), description: desc, value: val, observation: obs, type: type, cardName: cardName || 'Cartão'
-        });
+        // Calcula o valor da parcela
+        const installmentValue = totalVal / installments;
 
-        descInput.value = ''; valueInput.value = ''; obsInput.value = ''; cardNameInput.value = '';
+        // Cria os lançamentos para cada mês
+        for (let i = 0; i < installments; i++) {
+            const targetMonthKey = addMonthsToKey(currentMonthKey, i);
+            
+            // Garante que o mês existe no sistema
+            if (!state.monthsData[targetMonthKey]) {
+                state.monthsData[targetMonthKey] = { salary: 0, expenses: [] };
+            }
+
+            // Adiciona a numeração na descrição se for parcelado (ex: 1/3)
+            const installmentDesc = installments > 1 ? `${desc} (${i + 1}/${installments})` : desc;
+
+            state.monthsData[targetMonthKey].expenses.push({
+                id: Date.now() + i, // o + i garante que cada ID seja único gerado no mesmo milissegundo
+                description: installmentDesc,
+                value: installmentValue,
+                observation: obs,
+                type: type,
+                cardName: cardName || 'Cartão'
+            });
+        }
+
+        // Limpa os campos
+        descInput.value = ''; 
+        valueInput.value = ''; 
+        installmentsInput.value = '1';
+        obsInput.value = ''; 
+        cardNameInput.value = '';
+        
         updateUI();
     }
 
