@@ -76,9 +76,30 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             <div class="space-y-6">
+                <!-- Painel de Rendas (Antigo Salário) -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Salário do Mês (R$)</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Renda Principal (R$)</label>
                     <input type="text" inputmode="decimal" id="salaryInput" placeholder="0,00" class="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all pb-2 disabled:opacity-50">
+                    
+                    <!-- Nova Seção: Rendas Extras -->
+                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase">Rendas Extras (Múltiplas)</label>
+                            <button onclick="toggleExtraIncomeForm()" class="text-emerald-500 hover:text-emerald-600 text-xs font-bold transition flex items-center gap-1">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                        
+                        <!-- Formulário oculto para Renda Extra -->
+                        <div id="extraIncomeForm" class="hidden mt-3 flex gap-2">
+                            <input type="text" id="extraIncomeDesc" placeholder="Descrição (ex: Venda)" class="w-1/2 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500">
+                            <input type="number" id="extraIncomeVal" placeholder="Valor" class="w-1/3 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500">
+                            <button onclick="saveExtraIncome()" class="w-1/6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex justify-center items-center transition"><i class="fas fa-check"></i></button>
+                        </div>
+
+                        <!-- Lista de Rendas Extras -->
+                        <ul id="extraIncomeList" class="mt-3 space-y-1"></ul>
+                    </div>
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
@@ -108,7 +129,7 @@
 
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500"><p class="text-xs font-bold text-slate-400 uppercase">Receita</p><p id="displaySalary" class="text-xl font-bold text-emerald-600">Carregando...</p></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500"><p class="text-xs font-bold text-slate-400 uppercase">Receita Total</p><p id="displaySalary" class="text-xl font-bold text-emerald-600">Carregando...</p></div>
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-rose-500"><p class="text-xs font-bold text-slate-400 uppercase">Despesas</p><p id="displayExpenses" class="text-xl font-bold text-rose-600">...</p></div>
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-blue-500"><p class="text-xs font-bold text-slate-400 uppercase">Sobra</p><p id="displayBalance" class="text-xl font-bold text-blue-600">...</p></div>
                 </div>
@@ -126,7 +147,7 @@
         <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 3.1 Nuvem Multi-Usuários</p>
+                <p>Versão 4.0 (Rendas Múltiplas e Parcelamentos)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -195,7 +216,7 @@
         }
     });
 
-    // Função de Login com Google (Corrigida para usar Pop-up seguro em HTTPS)
+    // Função de Login com Google
     function loginComGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch((error) => {
@@ -243,11 +264,11 @@
         const now = new Date();
         currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         monthSelector.value = currentMonthKey;
-        if (!state.monthsData[currentMonthKey]) state.monthsData[currentMonthKey] = { salary: 0, expenses: [] };
+        if (!state.monthsData[currentMonthKey]) state.monthsData[currentMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
 
         monthSelector.addEventListener('change', (e) => {
             currentMonthKey = e.target.value;
-            if (!state.monthsData[currentMonthKey]) state.monthsData[currentMonthKey] = { salary: 0, expenses: [] };
+            if (!state.monthsData[currentMonthKey]) state.monthsData[currentMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
             updateUI();
         });
     }
@@ -269,6 +290,53 @@
             icon.className = "fas fa-moon text-slate-600";
         }
     }
+
+    // --- NOVA LÓGICA DE RENDAS EXTRAS ---
+    function toggleExtraIncomeForm() {
+        document.getElementById('extraIncomeForm').classList.toggle('hidden');
+    }
+
+    function saveExtraIncome() {
+        const desc = document.getElementById('extraIncomeDesc').value.trim();
+        const val = parseFloat(document.getElementById('extraIncomeVal').value);
+        
+        if (!desc || isNaN(val) || val <= 0) return alert("Preencha a descrição e o valor da renda extra!");
+        
+        if (!state.monthsData[currentMonthKey].extraIncomes) {
+            state.monthsData[currentMonthKey].extraIncomes = [];
+        }
+        
+        state.monthsData[currentMonthKey].extraIncomes.push({ id: Date.now(), description: desc, value: val });
+        
+        document.getElementById('extraIncomeDesc').value = '';
+        document.getElementById('extraIncomeVal').value = '';
+        toggleExtraIncomeForm();
+        updateUI();
+    }
+
+    function removeExtraIncome(id) {
+        if(!state.monthsData[currentMonthKey].extraIncomes) return;
+        state.monthsData[currentMonthKey].extraIncomes = state.monthsData[currentMonthKey].extraIncomes.filter(e => e.id !== id);
+        updateUI();
+    }
+
+    function renderExtraIncomes(extraIncomes) {
+        const list = document.getElementById('extraIncomeList');
+        if (!extraIncomes || extraIncomes.length === 0) {
+            list.innerHTML = '';
+            return;
+        }
+        list.innerHTML = extraIncomes.map(inc => `
+            <li class="flex justify-between items-center text-sm py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 group">
+                <span class="text-slate-600 dark:text-slate-300 font-medium">${inc.description}</span>
+                <div class="flex items-center gap-3">
+                    <span class="font-bold text-emerald-500">+${formatCurrency(inc.value)}</span>
+                    <button onclick="removeExtraIncome(${inc.id})" class="text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt text-xs"></i></button>
+                </div>
+            </li>
+        `).join('');
+    }
+    // ------------------------------------
 
     salaryInput.addEventListener('input', (e) => {
         if(!isDataLoaded) return;
@@ -310,7 +378,7 @@
             const targetMonthKey = addMonthsToKey(currentMonthKey, i);
             
             if (!state.monthsData[targetMonthKey]) {
-                state.monthsData[targetMonthKey] = { salary: 0, expenses: [] };
+                state.monthsData[targetMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
             }
 
             const installmentDesc = installments > 1 ? `${desc} (${i + 1}/${installments})` : desc;
@@ -340,8 +408,8 @@
     }
 
     function clearMonth() {
-        if (confirm("Limpar este mês?")) {
-            state.monthsData[currentMonthKey] = { salary: 0, expenses: [] };
+        if (confirm("Limpar os dados deste mês?")) {
+            state.monthsData[currentMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
             salaryInput.value = '';
             updateUI();
         }
@@ -356,14 +424,20 @@
             salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
         }
         
+        // CÁLCULOS COM MÚLTIPLAS RENDAS
+        const extraIncomes = data.extraIncomes || [];
+        const extraIncomesTotal = extraIncomes.reduce((acc, curr) => acc + curr.value, 0);
+        const totalIncome = (data.salary || 0) + extraIncomesTotal;
+        
         const totalExp = data.expenses.reduce((acc, curr) => acc + curr.value, 0);
-        const balance = (data.salary || 0) - totalExp;
+        const balance = totalIncome - totalExp;
 
-        document.getElementById('displaySalary').innerText = formatCurrency(data.salary || 0);
+        document.getElementById('displaySalary').innerText = formatCurrency(totalIncome);
         document.getElementById('displayExpenses').innerText = formatCurrency(totalExp);
         document.getElementById('displayBalance').innerText = formatCurrency(balance);
         document.getElementById('displayBalance').className = balance < 0 ? "text-xl font-bold text-rose-600" : "text-xl font-bold text-blue-600";
 
+        renderExtraIncomes(extraIncomes);
         renderList(data.expenses);
         renderChart(data.expenses);
         save();
@@ -419,7 +493,22 @@
     function exportToCSV() {
         let csv = "Mês,Descrição,Valor,Tipo,Cartão,Observação\n";
         Object.keys(state.monthsData).forEach(mKey => {
-            state.monthsData[mKey].expenses.forEach(e => {
+            const monthData = state.monthsData[mKey];
+            
+            // Grava a Renda Principal
+            if (monthData.salary > 0) {
+                csv += `${mKey},Renda Principal,${monthData.salary.toFixed(2)},Receita,-,-\n`;
+            }
+            
+            // Grava as Rendas Extras
+            if (monthData.extraIncomes) {
+                monthData.extraIncomes.forEach(inc => {
+                    csv += `${mKey},${inc.description} (Renda Extra),${inc.value.toFixed(2)},Receita,-,-\n`;
+                });
+            }
+
+            // Grava as Despesas
+            monthData.expenses.forEach(e => {
                 csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'},${e.observation || '-'}\n`;
             });
         });
