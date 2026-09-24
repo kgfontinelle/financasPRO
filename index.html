@@ -76,12 +76,11 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             <div class="space-y-6">
-                <!-- Painel de Rendas (Antigo Salário) -->
+                <!-- Painel de Rendas -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Renda Principal (R$)</label>
                     <input type="text" inputmode="decimal" id="salaryInput" placeholder="0,00" class="w-full text-2xl font-bold bg-transparent border-b-2 border-slate-100 dark:border-slate-700 focus:border-blue-500 outline-none transition-all pb-2 disabled:opacity-50">
                     
-                    <!-- Nova Seção: Rendas Extras -->
                     <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div class="flex justify-between items-center">
                             <label class="block text-[10px] font-bold text-slate-400 uppercase">Rendas Extras (Múltiplas)</label>
@@ -90,14 +89,12 @@
                             </button>
                         </div>
                         
-                        <!-- Formulário oculto para Renda Extra -->
                         <div id="extraIncomeForm" class="hidden mt-3 flex gap-2">
                             <input type="text" id="extraIncomeDesc" placeholder="Descrição (ex: Venda)" class="w-1/2 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500">
                             <input type="number" id="extraIncomeVal" placeholder="Valor" class="w-1/3 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500">
                             <button onclick="saveExtraIncome()" class="w-1/6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex justify-center items-center transition"><i class="fas fa-check"></i></button>
                         </div>
 
-                        <!-- Lista de Rendas Extras -->
                         <ul id="extraIncomeList" class="mt-3 space-y-1"></ul>
                     </div>
                 </div>
@@ -147,7 +144,7 @@
         <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 4.0 (Rendas Múltiplas e Parcelamentos)</p>
+                <p>Versão 4.1 (Gráfico Colorido e Detalhado)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -164,7 +161,6 @@
         appId: "1:50533258484:web:432f9ecacda57e26337aa1"
     };
 
-    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -216,7 +212,6 @@
         }
     });
 
-    // Função de Login com Google
     function loginComGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch((error) => {
@@ -225,7 +220,6 @@
         });
     }
 
-    // Função de Sair da Conta
     function logout() {
         auth.signOut();
         state = { theme: 'light', monthsData: {} };
@@ -291,7 +285,6 @@
         }
     }
 
-    // --- NOVA LÓGICA DE RENDAS EXTRAS ---
     function toggleExtraIncomeForm() {
         document.getElementById('extraIncomeForm').classList.toggle('hidden');
     }
@@ -336,7 +329,6 @@
             </li>
         `).join('');
     }
-    // ------------------------------------
 
     salaryInput.addEventListener('input', (e) => {
         if(!isDataLoaded) return;
@@ -381,6 +373,7 @@
                 state.monthsData[targetMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
             }
 
+            // Remove o "(1/X)" para não fragmentar o gráfico mês a mês se não for necessário na label do gráfico
             const installmentDesc = installments > 1 ? `${desc} (${i + 1}/${installments})` : desc;
 
             state.monthsData[targetMonthKey].expenses.push({
@@ -389,7 +382,8 @@
                 value: installmentValue,
                 observation: obs,
                 type: type,
-                cardName: cardName || 'Cartão'
+                cardName: cardName || 'Cartão',
+                baseDescription: desc // Campo interno para o gráfico agrupar corretamente as parcelas
             });
         }
 
@@ -424,7 +418,6 @@
             salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
         }
         
-        // CÁLCULOS COM MÚLTIPLAS RENDAS
         const extraIncomes = data.extraIncomes || [];
         const extraIncomesTotal = extraIncomes.reduce((acc, curr) => acc + curr.value, 0);
         const totalIncome = (data.salary || 0) + extraIncomesTotal;
@@ -471,14 +464,23 @@
     function renderChart(expenses) {
         const ctx = document.getElementById('expenseChart').getContext('2d');
         const totals = expenses.reduce((acc, curr) => {
-            const key = curr.type === 'cartao' ? `Cartão: ${curr.cardName}` : 'Geral';
+            // Agrupa as fatias da pizza: Se for cartão usa o nome do cartão. Se for geral, usa a descrição da despesa.
+            const key = curr.type === 'cartao' ? `Cartão: ${curr.cardName}` : (curr.baseDescription || curr.description);
             acc[key] = (acc[key] || 0) + curr.value;
             return acc;
         }, {});
 
         const labels = Object.keys(totals);
         const dataValues = Object.values(totals);
-        const colors = labels.map((_, i) => i === 0 ? '#f97316' : (i === 1 ? '#a855f7' : '#3b82f6'));
+        
+        // Grande paleta de cores para garantir que cada item/cartão tenha uma cor distinta
+        const palette = [
+            '#f97316', '#a855f7', '#3b82f6', '#10b981', '#f43f5e',
+            '#eab308', '#06b6d4', '#ec4899', '#8b5cf6', '#14b8a6',
+            '#ef4444', '#0ea5e9', '#d946ef', '#84cc16', '#64748b'
+        ];
+
+        const colors = labels.map((_, i) => palette[i % palette.length]);
 
         if (myChart) myChart.destroy();
         if (labels.length === 0) return;
@@ -495,19 +497,16 @@
         Object.keys(state.monthsData).forEach(mKey => {
             const monthData = state.monthsData[mKey];
             
-            // Grava a Renda Principal
             if (monthData.salary > 0) {
                 csv += `${mKey},Renda Principal,${monthData.salary.toFixed(2)},Receita,-,-\n`;
             }
             
-            // Grava as Rendas Extras
             if (monthData.extraIncomes) {
                 monthData.extraIncomes.forEach(inc => {
                     csv += `${mKey},${inc.description} (Renda Extra),${inc.value.toFixed(2)},Receita,-,-\n`;
                 });
             }
 
-            // Grava as Despesas
             monthData.expenses.forEach(e => {
                 csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'},${e.observation || '-'}\n`;
             });
