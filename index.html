@@ -225,7 +225,7 @@
 
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 8.0 (Edição Rápida de Despesas)</p>
+                <p>Versão 8.1 (Ícones Sempre Visíveis)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -393,11 +393,11 @@
         const list = document.getElementById('extraIncomeList');
         if (!extraIncomes || extraIncomes.length === 0) { list.innerHTML = ''; return; }
         list.innerHTML = extraIncomes.map(inc => `
-            <li class="flex justify-between items-center text-sm py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 group">
+            <li class="flex justify-between items-center text-sm py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
                 <span class="text-slate-600 dark:text-slate-300 font-medium">${inc.description}</span>
                 <div class="flex items-center gap-3">
                     <span class="font-bold text-emerald-500">+${formatCurrency(inc.value)}</span>
-                    <button onclick="removeExtraIncome(${inc.id})" class="text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt text-xs"></i></button>
+                    <button onclick="removeExtraIncome(${inc.id})" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-trash-alt text-xs"></i></button>
                 </div>
             </li>
         `).join('');
@@ -495,7 +495,7 @@
         updateUI();
     }
 
-    // --- NOVA LÓGICA: EDIÇÃO DE DESPESAS ---
+    // --- EDIÇÃO DE DESPESAS ---
     function openEditModal(id) {
         const exp = state.monthsData[currentMonthKey].expenses.find(e => e.id === id);
         if (!exp) return;
@@ -537,7 +537,7 @@
         if (type === 'cartao' && !cardName) return alert("Informe o nome do cartão!");
 
         state.monthsData[currentMonthKey].expenses[expIndex] = {
-            ...state.monthsData[currentMonthKey].expenses[expIndex], // mantém ID, status de pago, etc.
+            ...state.monthsData[currentMonthKey].expenses[expIndex], 
             description: desc,
             value: val,
             observation: obs,
@@ -657,7 +657,7 @@
             return;
         }
         expenseList.innerHTML = expenses.map(exp => `
-            <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group ${exp.paid ? 'opacity-50 bg-slate-50 dark:bg-slate-800/50' : ''}">
+            <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition ${exp.paid ? 'opacity-50 bg-slate-50 dark:bg-slate-800/50' : ''}">
                 <div class="flex items-center gap-4 w-full">
                     <input type="checkbox" onchange="togglePaid(${exp.id})" ${exp.paid ? 'checked' : ''} title="Marcar como pago"
                            class="w-5 h-5 text-emerald-500 bg-white border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600 cursor-pointer">
@@ -675,12 +675,11 @@
                 <div class="flex items-center gap-4">
                     <span class="text-sm font-bold ${exp.paid ? 'text-slate-400' : 'text-rose-500'}">-${formatCurrency(exp.value)}</span>
                     
-                    <!-- Botão de Editar -->
-                    <button onclick="openEditModal(${exp.id})" class="text-slate-300 hover:text-blue-500 transition opacity-0 group-hover:opacity-100 ml-2" title="Editar despesa">
+                    <!-- Botões sempre visíveis -->
+                    <button onclick="openEditModal(${exp.id})" class="text-slate-400 hover:text-blue-500 transition ml-2" title="Editar despesa">
                         <i class="fas fa-edit text-sm"></i>
                     </button>
-                    <!-- Botão de Apagar -->
-                    <button onclick="removeExpense(${exp.id})" class="text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100 ml-2" title="Apagar despesa">
+                    <button onclick="removeExpense(${exp.id})" class="text-slate-400 hover:text-rose-500 transition ml-2" title="Apagar despesa">
                         <i class="fas fa-trash-alt text-sm"></i>
                     </button>
                 </div>
