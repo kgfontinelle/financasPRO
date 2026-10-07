@@ -24,6 +24,14 @@
         body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
         #expenseList::-webkit-scrollbar { width: 6px; }
         #expenseList::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Estilo para a checkbox customizada */
+        input[type="checkbox"] {
+            accent-color: #10b981;
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen">
@@ -86,7 +94,6 @@
                             <label class="block text-[10px] font-bold text-slate-400 uppercase">Rendas Extras</label>
                             
                             <div class="flex gap-3">
-                                <!-- NOVO BOTÃO: Puxar Sobra -->
                                 <button onclick="pullPreviousMonthBalance()" class="text-blue-500 hover:text-blue-600 text-xs font-bold transition flex items-center gap-1" title="Puxar o saldo que sobrou do mês anterior">
                                     <i class="fas fa-hand-holding-usd"></i> Puxar Sobra
                                 </button>
@@ -133,10 +140,28 @@
             </div>
 
             <div class="lg:col-span-2 space-y-6">
+                <!-- Painéis Resumo Atualizados -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500"><p class="text-xs font-bold text-slate-400 uppercase">Receita Total</p><p id="displaySalary" class="text-xl font-bold text-emerald-600">Carregando...</p></div>
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-rose-500"><p class="text-xs font-bold text-slate-400 uppercase">Despesas</p><p id="displayExpenses" class="text-xl font-bold text-rose-600">...</p></div>
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-blue-500"><p class="text-xs font-bold text-slate-400 uppercase">Sobra</p><p id="displayBalance" class="text-xl font-bold text-blue-600">...</p></div>
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Receita Total</p>
+                        <p id="displaySalary" class="text-xl font-bold text-emerald-600">Carregando...</p>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-rose-500 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase">Despesas (Total)</p>
+                            <p id="displayExpenses" class="text-xl font-bold text-rose-600">...</p>
+                        </div>
+                        <p id="displayPaidExpenses" class="text-[10px] text-slate-500 mt-1 font-semibold">Já pago: ...</p>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-blue-500 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase" title="Sua renda total menos as contas já pagas">Saldo Atual</p>
+                            <p id="displayBalance" class="text-xl font-bold text-blue-600">...</p>
+                        </div>
+                        <p id="displayProjected" class="text-[10px] text-slate-500 mt-1 font-semibold" title="Sobra prevista após pagar tudo">Sobra final prevista: ...</p>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -152,7 +177,7 @@
         <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 5.0 (Sobra Automática do Mês Anterior)</p>
+                <p>Versão 6.0 (Marcador de Pago e Saldo Dinâmico)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -338,7 +363,6 @@
         `).join('');
     }
 
-    // --- LÓGICA PARA PUXAR SOBRA DO MÊS ANTERIOR ---
     function getPreviousMonthKey(key) {
         let [year, month] = key.split('-').map(Number);
         month -= 1;
@@ -360,7 +384,9 @@
         const prevExtraTotal = (prevData.extraIncomes || []).reduce((acc, curr) => acc + curr.value, 0);
         const prevIncomeTotal = (prevData.salary || 0) + prevExtraTotal;
         const prevExpTotal = prevData.expenses.reduce((acc, curr) => acc + curr.value, 0);
-        const prevBalance = prevIncomeTotal - prevExpTotal;
+        
+        // Puxamos a sobra real (Renda Total - Total de Despesas)
+        const prevBalance = prevIncomeTotal - prevExpTotal; 
 
         if (prevBalance <= 0) {
             return alert("O mês anterior fechou sem sobra (saldo zero ou negativo).");
@@ -370,7 +396,6 @@
             state.monthsData[currentMonthKey].extraIncomes = [];
         }
 
-        // Verifica se a sobra desse mês já foi puxada antes
         const monthStr = prevMonthKey.split('-')[1] + '/' + prevMonthKey.split('-')[0];
         const labelText = `Sobra de ${monthStr}`;
         const jaPuxou = state.monthsData[currentMonthKey].extraIncomes.some(inc => inc.description === labelText);
@@ -387,7 +412,6 @@
 
         updateUI();
     }
-    // ----------------------------------------------
 
     salaryInput.addEventListener('input', (e) => {
         if(!isDataLoaded) return;
@@ -441,7 +465,8 @@
                 observation: obs,
                 type: type,
                 cardName: cardName || 'Cartão',
-                baseDescription: desc 
+                baseDescription: desc,
+                paid: false // Despesa nova sempre entra como pendente
             });
         }
 
@@ -466,6 +491,15 @@
             updateUI();
         }
     }
+    
+    // NOVO: Função para alternar entre pago e pendente
+    function togglePaid(id) {
+        const exp = state.monthsData[currentMonthKey].expenses.find(e => e.id === id);
+        if (exp) {
+            exp.paid = !exp.paid; // Inverte o estado (se true vira false, se false vira true)
+            updateUI();
+        }
+    }
 
     function updateUI(updateSalaryField = true) {
         if(!isDataLoaded) return;
@@ -476,17 +510,31 @@
             salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
         }
         
+        // 1. Receitas
         const extraIncomes = data.extraIncomes || [];
         const extraIncomesTotal = extraIncomes.reduce((acc, curr) => acc + curr.value, 0);
         const totalIncome = (data.salary || 0) + extraIncomesTotal;
         
+        // 2. Despesas
         const totalExp = data.expenses.reduce((acc, curr) => acc + curr.value, 0);
-        const balance = totalIncome - totalExp;
+        const paidExp = data.expenses.reduce((acc, curr) => curr.paid ? acc + curr.value : acc, 0);
+        
+        // 3. Saldos
+        // Saldo Atual: O dinheiro que você tem na mão (Receita - apenas o que já pagou)
+        const currentBalance = totalIncome - paidExp;
+        
+        // Sobra Projetada: O que vai sobrar quando pagar tudo que falta (Receita - total de despesas)
+        const projectedBalance = totalIncome - totalExp;
 
+        // Atualiza a tela
         document.getElementById('displaySalary').innerText = formatCurrency(totalIncome);
+        
         document.getElementById('displayExpenses').innerText = formatCurrency(totalExp);
-        document.getElementById('displayBalance').innerText = formatCurrency(balance);
-        document.getElementById('displayBalance').className = balance < 0 ? "text-xl font-bold text-rose-600" : "text-xl font-bold text-blue-600";
+        document.getElementById('displayPaidExpenses').innerText = `Já pago: ${formatCurrency(paidExp)}`;
+        
+        document.getElementById('displayBalance').innerText = formatCurrency(currentBalance);
+        document.getElementById('displayBalance').className = currentBalance < 0 ? "text-xl font-bold text-rose-600" : "text-xl font-bold text-blue-600";
+        document.getElementById('displayProjected').innerText = `Sobra final prevista: ${formatCurrency(projectedBalance)}`;
 
         renderExtraIncomes(extraIncomes);
         renderList(data.expenses);
@@ -501,19 +549,29 @@
             return;
         }
         expenseList.innerHTML = expenses.map(exp => `
-            <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group">
-                <div class="flex items-center gap-3">
-                    <div class="${exp.type === 'cartao' ? 'text-purple-500' : 'text-orange-500'}"><i class="fas ${exp.type === 'cartao' ? 'fa-credit-card' : 'fa-shopping-basket'}"></i></div>
-                    <div>
-                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">${exp.description}</p>
+            <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group ${exp.paid ? 'opacity-50 bg-slate-50 dark:bg-slate-800/50' : ''}">
+                <div class="flex items-center gap-4 w-full">
+                    
+                    <!-- NOVO: Checkbox de Pago -->
+                    <input type="checkbox" onchange="togglePaid(${exp.id})" ${exp.paid ? 'checked' : ''} title="Marcar como pago"
+                           class="w-5 h-5 text-emerald-500 bg-white border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600 cursor-pointer">
+                    
+                    <div class="${exp.type === 'cartao' ? 'text-purple-500' : 'text-orange-500'}">
+                        <i class="fas ${exp.type === 'cartao' ? 'fa-credit-card' : 'fa-shopping-basket'}"></i>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <!-- Título fica riscado se pago -->
+                        <p class="text-sm font-semibold ${exp.paid ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}">${exp.description}</p>
                         <p class="text-[10px] uppercase text-slate-400 font-bold">
                             ${exp.type === 'cartao' ? exp.cardName : 'Geral'}
                             ${exp.observation ? ` • ${exp.observation}` : ''}
                         </p>
                     </div>
                 </div>
+                
                 <div class="flex items-center gap-4">
-                    <span class="text-sm font-bold text-rose-500">-${formatCurrency(exp.value)}</span>
+                    <span class="text-sm font-bold ${exp.paid ? 'text-slate-400' : 'text-rose-500'}">-${formatCurrency(exp.value)}</span>
                     <button onclick="removeExpense(${exp.id})" class="text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt text-xs"></i></button>
                 </div>
             </li>`).join('');
@@ -549,22 +607,23 @@
     }
 
     function exportToCSV() {
-        let csv = "Mês,Descrição,Valor,Tipo,Cartão,Observação\n";
+        let csv = "Mês,Descrição,Valor,Tipo,Cartão,Observação,Status\n"; // Nova coluna "Status"
         Object.keys(state.monthsData).forEach(mKey => {
             const monthData = state.monthsData[mKey];
             
             if (monthData.salary > 0) {
-                csv += `${mKey},Renda Principal,${monthData.salary.toFixed(2)},Receita,-,-\n`;
+                csv += `${mKey},Renda Principal,${monthData.salary.toFixed(2)},Receita,-,-,Recebida\n`;
             }
             
             if (monthData.extraIncomes) {
                 monthData.extraIncomes.forEach(inc => {
-                    csv += `${mKey},${inc.description} (Renda Extra),${inc.value.toFixed(2)},Receita,-,-\n`;
+                    csv += `${mKey},${inc.description} (Renda Extra),${inc.value.toFixed(2)},Receita,-,-,Recebida\n`;
                 });
             }
 
             monthData.expenses.forEach(e => {
-                csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'},${e.observation || '-'}\n`;
+                const status = e.paid ? 'Pago' : 'Pendente';
+                csv += `${mKey},${e.description},${e.value.toFixed(2)},${e.type},${e.cardName || '-'},${e.observation || '-'},${status}\n`;
             });
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
