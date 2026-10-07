@@ -166,6 +166,7 @@
                         <button onclick="addExpense()" id="addBtn" class="w-full bg-slate-800 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg disabled:opacity-50">Adicionar Despesa</button>
                     </div>
 
+                    <!-- Pagamento Parcial de Fatura (Com Juros/Parcelamento) -->
                     <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-[10px] font-bold text-slate-400 uppercase">Fatura Incompleta?</label>
@@ -178,10 +179,20 @@
                             <select id="partialCardSelect" class="w-full p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
                                 <option value="">Selecione um cartão...</option>
                             </select>
-                            <div class="flex gap-2">
-                                <input type="number" id="partialPaidAmount" placeholder="Valor pago (R$)" class="w-2/3 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
-                                <button onclick="processPartialPayment()" class="w-1/3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold flex justify-center items-center transition">Rolar</button>
+                            
+                            <input type="number" id="partialPaidAmount" placeholder="Valor pago hoje (R$)" class="w-full p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
+                            
+                            <!-- Caixa de opções de parcelamento com juros -->
+                            <div class="p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg space-y-2">
+                                <label class="block text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase">Opções de Parcelamento</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="partialInstallments" placeholder="Parcelas" min="1" value="1" title="Em quantas vezes dividiu o restante?" class="w-1/3 p-2 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
+                                    <input type="number" id="partialInstallmentValue" placeholder="Valor de CADA parcela (R$)" title="Valor exato da parcela cobrada pelo banco (com juros)" class="w-2/3 p-2 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
+                                </div>
+                                <p class="text-[10px] text-slate-500 leading-tight">Deixe o valor em branco se for rolar para o mês que vem sem juros.</p>
                             </div>
+
+                            <button onclick="processPartialPayment()" class="w-full bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-3 text-sm font-bold flex justify-center items-center transition shadow-md">Processar Rolagem</button>
                         </div>
                     </div>
                 </div>
@@ -225,7 +236,7 @@
 
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 8.1 (Ícones Sempre Visíveis)</p>
+                <p>Versão 9.0 (Rolagem e Parcelamento de Fatura com Juros)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -393,7 +404,7 @@
         const list = document.getElementById('extraIncomeList');
         if (!extraIncomes || extraIncomes.length === 0) { list.innerHTML = ''; return; }
         list.innerHTML = extraIncomes.map(inc => `
-            <li class="flex justify-between items-center text-sm py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+            <li class="flex justify-between items-center text-sm py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 group">
                 <span class="text-slate-600 dark:text-slate-300 font-medium">${inc.description}</span>
                 <div class="flex items-center gap-3">
                     <span class="font-bold text-emerald-500">+${formatCurrency(inc.value)}</span>
@@ -432,7 +443,7 @@
         updateUI();
     }
 
-    // --- ROLAGEM DE CARTÃO ---
+    // --- NOVA ROLAGEM COM PARCELAMENTO ---
     function togglePartialPaymentForm() {
         const form = document.getElementById('partialPaymentForm');
         if (form.classList.contains('hidden')) {
@@ -460,9 +471,12 @@
         const select = document.getElementById('partialCardSelect');
         const cardName = select.value;
         const paidAmount = parseFloat(document.getElementById('partialPaidAmount').value);
+        const instCount = parseInt(document.getElementById('partialInstallments').value) || 1;
+        let instValue = parseFloat(document.getElementById('partialInstallmentValue').value);
 
         if (!cardName) return alert("Selecione um cartão!");
         if (isNaN(paidAmount) || paidAmount < 0) return alert("Informe um valor pago válido (mesmo que seja 0)!");
+        if (instCount < 1) return alert("A quantidade de parcelas deve ser pelo menos 1!");
 
         const data = state.monthsData[currentMonthKey];
         let totalPending = 0;
@@ -476,21 +490,44 @@
         if (paidAmount >= totalPending) return alert("O valor pago é igual ou maior que a pendência. Apenas marque as despesas como pagas na lista!");
 
         const remaining = totalPending - paidAmount;
+        
+        // Se a pessoa deixou em branco o valor da parcela, assume que dividiu sem juros
+        if (isNaN(instValue) || instValue <= 0) {
+            instValue = remaining / instCount;
+        }
+
+        // Quita o cartão no mês atual
         pendingExpenses.forEach(e => e.paid = true);
 
+        // Equilibra o caixa adicionando o que faltou pagar como Ajuste
         if (!data.extraIncomes) data.extraIncomes = [];
         data.extraIncomes.push({ id: Date.now(), description: `Ajuste Rolagem (${cardName})`, value: remaining });
 
-        const nextMonthKey = addMonthsToKey(currentMonthKey, 1);
-        if (!state.monthsData[nextMonthKey]) state.monthsData[nextMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
-        
-        state.monthsData[nextMonthKey].expenses.push({
-            id: Date.now() + 1, description: `Fatura Anterior`, value: remaining, observation: `Restante rolado do mês passado`,
-            type: 'cartao', cardName: cardName, baseDescription: `Fatura Anterior`, paid: false
-        });
+        // Lança as parcelas nos meses seguintes
+        for (let i = 1; i <= instCount; i++) {
+            const nextMonthKey = addMonthsToKey(currentMonthKey, i);
+            if (!state.monthsData[nextMonthKey]) state.monthsData[nextMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
+            
+            const descSuffix = instCount > 1 ? ` (${i}/${instCount})` : '';
+            
+            state.monthsData[nextMonthKey].expenses.push({
+                id: Date.now() + i, 
+                description: `Fatura Anterior${descSuffix}`, 
+                value: instValue, 
+                observation: `Rolagem de ${currentMonthKey.split('-')[1]}/${currentMonthKey.split('-')[0]} (${cardName})`,
+                type: 'cartao', 
+                cardName: cardName, 
+                baseDescription: `Fatura Anterior`, 
+                paid: false
+            });
+        }
 
-        alert(`Pagamento registrado!\nA diferença de ${formatCurrency(remaining)} foi transferida para as despesas do mês seguinte.`);
+        const totalWithInterest = instValue * instCount;
+        alert(`Pagamento registrado!\nO restante da fatura foi lançado em ${instCount}x de ${formatCurrency(instValue)} nos próximos meses.`);
+        
         document.getElementById('partialPaidAmount').value = '';
+        document.getElementById('partialInstallments').value = '1';
+        document.getElementById('partialInstallmentValue').value = '';
         togglePartialPaymentForm();
         updateUI();
     }
@@ -674,8 +711,6 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="text-sm font-bold ${exp.paid ? 'text-slate-400' : 'text-rose-500'}">-${formatCurrency(exp.value)}</span>
-                    
-                    <!-- Botões sempre visíveis -->
                     <button onclick="openEditModal(${exp.id})" class="text-slate-400 hover:text-blue-500 transition ml-2" title="Editar despesa">
                         <i class="fas fa-edit text-sm"></i>
                     </button>
