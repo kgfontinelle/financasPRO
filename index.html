@@ -25,7 +25,6 @@
         #expenseList::-webkit-scrollbar { width: 6px; }
         #expenseList::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        /* Estilo para a checkbox customizada */
         input[type="checkbox"] {
             accent-color: #10b981;
             width: 1.25rem;
@@ -49,10 +48,9 @@
         </div>
     </div>
 
-    <!-- APLICATIVO PRINCIPAL (Oculto até fazer login) -->
+    <!-- APLICATIVO PRINCIPAL -->
     <div id="mainApp" class="max-w-6xl mx-auto p-4 md:p-8 hidden">
         
-        <!-- Header -->
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 dark:text-white">💰 Finanças Pro</h1>
@@ -73,14 +71,12 @@
                     <i class="fas fa-file-export"></i> <span class="hidden sm:inline">CSV</span>
                 </button>
 
-                <!-- Botão de Sair -->
                 <button onclick="logout()" class="mt-4 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/50 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2">
                     <i class="fas fa-sign-out-alt"></i> Sair
                 </button>
             </div>
         </header>
 
-        <!-- Conteúdo Principal -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             <div class="space-y-6">
@@ -92,12 +88,10 @@
                     <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div class="flex justify-between items-center mb-2">
                             <label class="block text-[10px] font-bold text-slate-400 uppercase">Rendas Extras</label>
-                            
                             <div class="flex gap-3">
                                 <button onclick="pullPreviousMonthBalance()" class="text-blue-500 hover:text-blue-600 text-xs font-bold transition flex items-center gap-1" title="Puxar o saldo que sobrou do mês anterior">
                                     <i class="fas fa-hand-holding-usd"></i> Puxar Sobra
                                 </button>
-                                
                                 <button onclick="toggleExtraIncomeForm()" class="text-emerald-500 hover:text-emerald-600 text-xs font-bold transition flex items-center gap-1">
                                     <i class="fas fa-plus"></i> Adicionar
                                 </button>
@@ -109,11 +103,11 @@
                             <input type="number" id="extraIncomeVal" placeholder="Valor" class="w-1/3 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-emerald-500">
                             <button onclick="saveExtraIncome()" class="w-1/6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex justify-center items-center transition"><i class="fas fa-check"></i></button>
                         </div>
-
                         <ul id="extraIncomeList" class="mt-3 space-y-1"></ul>
                     </div>
                 </div>
 
+                <!-- Painel Nova Despesa -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <h2 class="text-lg font-bold mb-4">Nova Despesa</h2>
                     <div class="space-y-4">
@@ -135,12 +129,32 @@
                         </div>
                         <button onclick="addExpense()" id="addBtn" class="w-full bg-slate-800 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg disabled:opacity-50">Adicionar Despesa</button>
                     </div>
+
+                    <!-- NOVO: Pagamento Parcial de Fatura -->
+                    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase">Fatura Incompleta?</label>
+                            <button onclick="togglePartialPaymentForm()" class="text-amber-500 hover:text-amber-600 text-xs font-bold transition flex items-center gap-1">
+                                <i class="fas fa-share-square"></i> Rolar Restante
+                            </button>
+                        </div>
+                        
+                        <div id="partialPaymentForm" class="hidden mt-3 space-y-3">
+                            <select id="partialCardSelect" class="w-full p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
+                                <option value="">Selecione um cartão...</option>
+                            </select>
+                            <div class="flex gap-2">
+                                <input type="number" id="partialPaidAmount" placeholder="Valor pago (R$)" class="w-2/3 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-500">
+                                <button onclick="processPartialPayment()" class="w-1/3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold flex justify-center items-center transition">Rolar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <button onclick="clearMonth()" class="w-full text-rose-500 text-sm font-semibold hover:bg-rose-50 dark:hover:bg-rose-900/20 py-2 rounded-lg transition"><i class="fas fa-trash-alt mr-1"></i> Limpar este mês</button>
             </div>
 
             <div class="lg:col-span-2 space-y-6">
-                <!-- Painéis Resumo Atualizados -->
+                <!-- Painéis Resumo -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border-b-4 border-emerald-500">
                         <p class="text-xs font-bold text-slate-400 uppercase">Receita Total</p>
@@ -174,10 +188,9 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <footer class="mt-12 pb-8 text-center border-t dark:border-slate-800 pt-8">
             <div class="text-xs text-slate-400 dark:text-slate-500 space-y-1">
-                <p>Versão 6.0 (Marcador de Pago e Saldo Dinâmico)</p>
+                <p>Versão 7.0 (Rolagem de Fatura Incompleta)</p>
                 <p>By <span class="font-bold text-slate-600 dark:text-slate-300">KleDer</span> | <a href="mailto:kgfontinelle@gmail.com" class="hover:text-blue-500 transition">kgfontinelle@gmail.com</a></p>
             </div>
         </footer>
@@ -318,6 +331,7 @@
         }
     }
 
+    // --- RENDAS EXTRAS & SOBRA ---
     function toggleExtraIncomeForm() {
         document.getElementById('extraIncomeForm').classList.toggle('hidden');
     }
@@ -327,10 +341,7 @@
         const val = parseFloat(document.getElementById('extraIncomeVal').value);
         
         if (!desc || isNaN(val) || val <= 0) return alert("Preencha a descrição e o valor da renda extra!");
-        
-        if (!state.monthsData[currentMonthKey].extraIncomes) {
-            state.monthsData[currentMonthKey].extraIncomes = [];
-        }
+        if (!state.monthsData[currentMonthKey].extraIncomes) state.monthsData[currentMonthKey].extraIncomes = [];
         
         state.monthsData[currentMonthKey].extraIncomes.push({ id: Date.now(), description: desc, value: val });
         
@@ -377,24 +388,15 @@
         const prevMonthKey = getPreviousMonthKey(currentMonthKey);
         const prevData = state.monthsData[prevMonthKey];
 
-        if (!prevData) {
-            return alert("Não há registros no mês anterior para puxar.");
-        }
+        if (!prevData) return alert("Não há registros no mês anterior para puxar.");
 
         const prevExtraTotal = (prevData.extraIncomes || []).reduce((acc, curr) => acc + curr.value, 0);
         const prevIncomeTotal = (prevData.salary || 0) + prevExtraTotal;
         const prevExpTotal = prevData.expenses.reduce((acc, curr) => acc + curr.value, 0);
-        
-        // Puxamos a sobra real (Renda Total - Total de Despesas)
         const prevBalance = prevIncomeTotal - prevExpTotal; 
 
-        if (prevBalance <= 0) {
-            return alert("O mês anterior fechou sem sobra (saldo zero ou negativo).");
-        }
-
-        if (!state.monthsData[currentMonthKey].extraIncomes) {
-            state.monthsData[currentMonthKey].extraIncomes = [];
-        }
+        if (prevBalance <= 0) return alert("O mês anterior fechou sem sobra (saldo zero ou negativo).");
+        if (!state.monthsData[currentMonthKey].extraIncomes) state.monthsData[currentMonthKey].extraIncomes = [];
 
         const monthStr = prevMonthKey.split('-')[1] + '/' + prevMonthKey.split('-')[0];
         const labelText = `Sobra de ${monthStr}`;
@@ -404,14 +406,101 @@
             if(!confirm("Você já puxou a sobra do mês passado. Deseja adicionar novamente?")) return;
         }
 
-        state.monthsData[currentMonthKey].extraIncomes.push({
-            id: Date.now(),
-            description: labelText,
-            value: prevBalance
-        });
-
+        state.monthsData[currentMonthKey].extraIncomes.push({ id: Date.now(), description: labelText, value: prevBalance });
         updateUI();
     }
+
+    // --- NOVA LÓGICA: ROLAGEM DE CARTÃO ---
+    function togglePartialPaymentForm() {
+        const form = document.getElementById('partialPaymentForm');
+        if (form.classList.contains('hidden')) {
+            const data = state.monthsData[currentMonthKey];
+            if(!data) return;
+            
+            // Procura cartões com pendências neste mês
+            const cardTotals = {};
+            data.expenses.forEach(e => {
+                if (e.type === 'cartao' && !e.paid) {
+                    cardTotals[e.cardName] = (cardTotals[e.cardName] || 0) + e.value;
+                }
+            });
+
+            const select = document.getElementById('partialCardSelect');
+            select.innerHTML = '<option value="">Selecione um cartão pendente...</option>';
+            let hasCards = false;
+            Object.keys(cardTotals).forEach(cName => {
+                hasCards = true;
+                select.innerHTML += `<option value="${cName}">${cName} (Falta pagar: ${formatCurrency(cardTotals[cName])})</option>`;
+            });
+            
+            if(!hasCards) return alert("Não há despesas de cartão pendentes neste mês!");
+            
+            form.classList.remove('hidden');
+        } else {
+            form.classList.add('hidden');
+        }
+    }
+
+    function processPartialPayment() {
+        const select = document.getElementById('partialCardSelect');
+        const cardName = select.value;
+        const paidAmount = parseFloat(document.getElementById('partialPaidAmount').value);
+
+        if (!cardName) return alert("Selecione um cartão!");
+        if (isNaN(paidAmount) || paidAmount < 0) return alert("Informe um valor pago válido (mesmo que seja 0)!");
+
+        const data = state.monthsData[currentMonthKey];
+        
+        let totalPending = 0;
+        const pendingExpenses = [];
+        
+        data.expenses.forEach(e => {
+            if (e.type === 'cartao' && e.cardName === cardName && !e.paid) {
+                totalPending += e.value;
+                pendingExpenses.push(e);
+            }
+        });
+
+        if (totalPending === 0) return alert("Não há pendências para este cartão.");
+        if (paidAmount >= totalPending) return alert("O valor pago é igual ou maior que a pendência. Apenas marque as despesas como pagas na lista!");
+
+        const remaining = totalPending - paidAmount;
+
+        // 1. Marca tudo do cartão no mês atual como pago
+        pendingExpenses.forEach(e => e.paid = true);
+
+        // 2. Cria um "Ajuste/Devolução" para manter a matemática do Saldo Atual perfeita
+        if (!data.extraIncomes) data.extraIncomes = [];
+        data.extraIncomes.push({
+            id: Date.now(),
+            description: `Ajuste Rolagem (${cardName})`,
+            value: remaining
+        });
+
+        // 3. Joga a dívida pro próximo mês
+        const nextMonthKey = addMonthsToKey(currentMonthKey, 1);
+        if (!state.monthsData[nextMonthKey]) {
+            state.monthsData[nextMonthKey] = { salary: 0, expenses: [], extraIncomes: [] };
+        }
+        
+        state.monthsData[nextMonthKey].expenses.push({
+            id: Date.now() + 1,
+            description: `Fatura Anterior`,
+            value: remaining,
+            observation: `Restante rolado do mês passado`,
+            type: 'cartao',
+            cardName: cardName,
+            baseDescription: `Fatura Anterior`,
+            paid: false
+        });
+
+        alert(`Pagamento registrado!\nA diferença de ${formatCurrency(remaining)} foi transferida para as despesas do mês seguinte.`);
+        
+        document.getElementById('partialPaidAmount').value = '';
+        togglePartialPaymentForm();
+        updateUI();
+    }
+    // ------------------------------------
 
     salaryInput.addEventListener('input', (e) => {
         if(!isDataLoaded) return;
@@ -466,7 +555,7 @@
                 type: type,
                 cardName: cardName || 'Cartão',
                 baseDescription: desc,
-                paid: false // Despesa nova sempre entra como pendente
+                paid: false 
             });
         }
 
@@ -492,11 +581,10 @@
         }
     }
     
-    // NOVO: Função para alternar entre pago e pendente
     function togglePaid(id) {
         const exp = state.monthsData[currentMonthKey].expenses.find(e => e.id === id);
         if (exp) {
-            exp.paid = !exp.paid; // Inverte o estado (se true vira false, se false vira true)
+            exp.paid = !exp.paid; 
             updateUI();
         }
     }
@@ -510,25 +598,17 @@
             salaryInput.value = sal ? sal.toString().replace('.', ',') : '';
         }
         
-        // 1. Receitas
         const extraIncomes = data.extraIncomes || [];
         const extraIncomesTotal = extraIncomes.reduce((acc, curr) => acc + curr.value, 0);
         const totalIncome = (data.salary || 0) + extraIncomesTotal;
         
-        // 2. Despesas
         const totalExp = data.expenses.reduce((acc, curr) => acc + curr.value, 0);
         const paidExp = data.expenses.reduce((acc, curr) => curr.paid ? acc + curr.value : acc, 0);
         
-        // 3. Saldos
-        // Saldo Atual: O dinheiro que você tem na mão (Receita - apenas o que já pagou)
         const currentBalance = totalIncome - paidExp;
-        
-        // Sobra Projetada: O que vai sobrar quando pagar tudo que falta (Receita - total de despesas)
         const projectedBalance = totalIncome - totalExp;
 
-        // Atualiza a tela
         document.getElementById('displaySalary').innerText = formatCurrency(totalIncome);
-        
         document.getElementById('displayExpenses').innerText = formatCurrency(totalExp);
         document.getElementById('displayPaidExpenses').innerText = `Já pago: ${formatCurrency(paidExp)}`;
         
@@ -552,7 +632,6 @@
             <li class="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/30 transition group ${exp.paid ? 'opacity-50 bg-slate-50 dark:bg-slate-800/50' : ''}">
                 <div class="flex items-center gap-4 w-full">
                     
-                    <!-- NOVO: Checkbox de Pago -->
                     <input type="checkbox" onchange="togglePaid(${exp.id})" ${exp.paid ? 'checked' : ''} title="Marcar como pago"
                            class="w-5 h-5 text-emerald-500 bg-white border-slate-300 rounded focus:ring-emerald-500 dark:focus:ring-emerald-600 dark:ring-offset-slate-800 focus:ring-2 dark:bg-slate-700 dark:border-slate-600 cursor-pointer">
                     
@@ -561,7 +640,6 @@
                     </div>
                     
                     <div class="flex-1">
-                        <!-- Título fica riscado se pago -->
                         <p class="text-sm font-semibold ${exp.paid ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}">${exp.description}</p>
                         <p class="text-[10px] uppercase text-slate-400 font-bold">
                             ${exp.type === 'cartao' ? exp.cardName : 'Geral'}
@@ -607,7 +685,7 @@
     }
 
     function exportToCSV() {
-        let csv = "Mês,Descrição,Valor,Tipo,Cartão,Observação,Status\n"; // Nova coluna "Status"
+        let csv = "Mês,Descrição,Valor,Tipo,Cartão,Observação,Status\n"; 
         Object.keys(state.monthsData).forEach(mKey => {
             const monthData = state.monthsData[mKey];
             
